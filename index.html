@@ -2,109 +2,135 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Glücksrad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glücksrad Generator</title>
   <style>
     body {
-      margin: 0;
-      background: #fdf6f6;
       font-family: sans-serif;
+      background: #fefefe;
+      margin: 0;
+      display: flex;
+      flex-direction: row;
+      height: 100vh;
+    }
+
+    #left {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+    }
+
+    #right {
+      flex: 0.5;
+      padding: 20px;
+      background: #f0f0f0;
     }
 
     h1 {
-      margin-top: 20px;
-      font-size: 2.5rem;
+      margin-bottom: 10px;
     }
 
     canvas {
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
-    #startBtn {
-      margin-top: 20px;
+    textarea {
+      width: 100%;
+      height: 300px;
+      font-size: 16px;
+      padding: 10px;
+    }
+
+    button {
+      margin-top: 10px;
       padding: 10px 20px;
-      font-size: 1.2rem;
+      font-size: 16px;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
     }
 
     #result {
       margin-top: 20px;
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       color: green;
     }
   </style>
 </head>
 <body>
-
-  <h1>Glücksrad</h1>
-  <canvas id="wheel" width="400" height="400"></canvas>
-  <button id="startBtn">Drehen</button>
-  <div id="result"></div>
+  <div id="left">
+    <h1>Glücksrad</h1>
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <button id="spinBtn">Drehen</button>
+    <div id="result"></div>
+  </div>
+  <div id="right">
+    <h2>Optionen (eine pro Zeile)</h2>
+    <textarea id="segments">1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12</textarea>
+    <button onclick="updateSegments()">Aktualisieren</button>
+  </div>
 
   <script>
     const canvas = document.getElementById("wheel");
     const ctx = canvas.getContext("2d");
-    const startBtn = document.getElementById("startBtn");
     const resultEl = document.getElementById("result");
-
-    const options = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-    const colors = ["#ff6666", "#66ccff", "#99ff99", "#ffcc66", "#cc99ff", "#ff99cc"];
-    let angle = 0;
+    const spinBtn = document.getElementById("spinBtn");
+    let options = [];
+    const colors = ["#FF9999", "#66CCFF", "#99FF99", "#FFCC66", "#CC99FF", "#FF9966"];
     let spinning = false;
+    let angle = 0;
 
     function drawWheel() {
       const radius = canvas.width / 2;
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      const cx = radius;
+      const cy = radius;
       const angleStep = (2 * Math.PI) / options.length;
 
       for (let i = 0; i < options.length; i++) {
         ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
+        ctx.moveTo(cx, cy);
         ctx.fillStyle = colors[i % colors.length];
-        ctx.arc(centerX, centerY, radius, i * angleStep, (i + 1) * angleStep);
+        ctx.arc(cx, cy, radius, i * angleStep, (i + 1) * angleStep);
         ctx.fill();
+
         ctx.save();
-        ctx.translate(centerX, centerY);
+        ctx.translate(cx, cy);
         ctx.rotate(i * angleStep + angleStep / 2);
         ctx.textAlign = "right";
         ctx.fillStyle = "black";
-        ctx.font = "20px sans-serif";
-        ctx.fillText(options[i], radius - 10, 10);
+        ctx.font = "bold 16px sans-serif";
+        ctx.fillText(options[i], radius - 10, 5);
         ctx.restore();
       }
 
-      // стрілка
+      // Zeiger
       ctx.fillStyle = "red";
       ctx.beginPath();
-      ctx.moveTo(centerX, 0);
-      ctx.lineTo(centerX - 10, 20);
-      ctx.lineTo(centerX + 10, 20);
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx - 10, 20);
+      ctx.lineTo(cx + 10, 20);
       ctx.closePath();
       ctx.fill();
     }
 
     function spinWheel() {
-      if (spinning) return;
+      if (spinning || options.length === 0) return;
       spinning = true;
       resultEl.textContent = "";
-
-      let rotation = 0;
-      const targetRotation = Math.random() * 360 + 360 * 5;
+      const totalRotation = Math.random() * 360 + 360 * 6;
       const start = performance.now();
 
-      function animate(now) {
-        const elapsed = now - start;
+      function animate(time) {
+        const elapsed = time - start;
         const t = Math.min(elapsed / 3000, 1);
         const ease = 1 - Math.pow(1 - t, 3);
-        rotation = ease * targetRotation;
-        angle = rotation * Math.PI / 180;
+        const currentRotation = ease * totalRotation;
+        angle = currentRotation * Math.PI / 180;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -116,7 +142,8 @@
         if (t < 1) {
           requestAnimationFrame(animate);
         } else {
-          const selected = options[Math.floor((options.length - ((angle / (2 * Math.PI)) * options.length)) % options.length)];
+          const selectedIndex = Math.floor((options.length - ((angle / (2 * Math.PI)) * options.length)) % options.length);
+          const selected = options[selectedIndex >= 0 ? selectedIndex : (selectedIndex + options.length)];
           resultEl.textContent = `Gewählt: ${selected}`;
           spinning = false;
         }
@@ -125,8 +152,16 @@
       requestAnimationFrame(animate);
     }
 
-    drawWheel();
-    startBtn.addEventListener("click", spinWheel);
+    function updateSegments() {
+      const text = document.getElementById("segments").value.trim();
+      options = text.split("\n").filter(Boolean);
+      angle = 0;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawWheel();
+    }
+
+    spinBtn.addEventListener("click", spinWheel);
+    updateSegments();
   </script>
 </body>
 </html>
