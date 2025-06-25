@@ -20,6 +20,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      position: relative;
     }
 
     #right {
@@ -34,6 +35,20 @@
 
     canvas {
       margin-top: 10px;
+      z-index: 0;
+    }
+
+    #pointer {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 30px solid red;
+      z-index: 2;
     }
 
     textarea {
@@ -64,6 +79,7 @@
 <body>
   <div id="left">
     <h1>Glücksrad</h1>
+    <div id="pointer"></div>
     <canvas id="wheel" width="400" height="400"></canvas>
     <button id="spinBtn">Drehen</button>
     <div id="result"></div>
@@ -106,15 +122,6 @@
         ctx.fillText(options[i], radius - 10, 5);
         ctx.restore();
       }
-
-      // Zeiger
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(cx, 0);
-      ctx.lineTo(cx - 10, 20);
-      ctx.lineTo(cx + 10, 20);
-      ctx.closePath();
-      ctx.fill();
     }
 
     function spinWheel() {
@@ -142,7 +149,9 @@
         if (t < 1) {
           requestAnimationFrame(animate);
         } else {
-          const selectedIndex = Math.floor((options.length - ((angle / (2 * Math.PI)) * options.length)) % options.length);
+          const segmentAngle = (2 * Math.PI) / options.length;
+          const normalizedAngle = (2 * Math.PI - (angle % (2 * Math.PI))) % (2 * Math.PI);
+          const selectedIndex = Math.floor(normalizedAngle / segmentAngle);
           const selected = options[selectedIndex >= 0 ? selectedIndex : (selectedIndex + options.length)];
           resultEl.textContent = `Gewählt: ${selected}`;
           spinning = false;
