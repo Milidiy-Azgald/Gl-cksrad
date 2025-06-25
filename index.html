@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Glücksrad</title>
+  <style>
+    body {
+      margin: 0;
+      background: #fdf6f6;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: 2.5rem;
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+
+    #startBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1.2rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1.8rem;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Glücksrad</h1>
+  <canvas id="wheel" width="400" height="400"></canvas>
+  <button id="startBtn">Drehen</button>
+  <div id="result"></div>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const startBtn = document.getElementById("startBtn");
+    const resultEl = document.getElementById("result");
+
+    const options = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const colors = ["#ff6666", "#66ccff", "#99ff99", "#ffcc66", "#cc99ff", "#ff99cc"];
+    let angle = 0;
+    let spinning = false;
+
+    function drawWheel() {
+      const radius = canvas.width / 2;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const angleStep = (2 * Math.PI) / options.length;
+
+      for (let i = 0; i < options.length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.arc(centerX, centerY, radius, i * angleStep, (i + 1) * angleStep);
+        ctx.fill();
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(i * angleStep + angleStep / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "black";
+        ctx.font = "20px sans-serif";
+        ctx.fillText(options[i], radius - 10, 10);
+        ctx.restore();
+      }
+
+      // стрілка
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(centerX, 0);
+      ctx.lineTo(centerX - 10, 20);
+      ctx.lineTo(centerX + 10, 20);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function spinWheel() {
+      if (spinning) return;
+      spinning = true;
+      resultEl.textContent = "";
+
+      let rotation = 0;
+      const targetRotation = Math.random() * 360 + 360 * 5;
+      const start = performance.now();
+
+      function animate(now) {
+        const elapsed = now - start;
+        const t = Math.min(elapsed / 3000, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        rotation = ease * targetRotation;
+        angle = rotation * Math.PI / 180;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(angle);
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+        drawWheel();
+        ctx.restore();
+
+        if (t < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          const selected = options[Math.floor((options.length - ((angle / (2 * Math.PI)) * options.length)) % options.length)];
+          resultEl.textContent = `Gewählt: ${selected}`;
+          spinning = false;
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    drawWheel();
+    startBtn.addEventListener("click", spinWheel);
+  </script>
+</body>
+</html>
